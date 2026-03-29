@@ -1,0 +1,136 @@
+name: supply-chain-inventory-env
+version: "1.0.0"
+description: >
+  A real-world supply chain inventory management environment where an AI agent
+  must make restocking, warehouse transfer, and pricing decisions to maximise
+  profit while avoiding stockouts and minimising holding costs over a 30-day
+  planning horizon.
+tags:
+  - openenv
+  - supply-chain
+  - inventory
+  - real-world
+
+authors:
+  - name: "Supply Chain OpenEnv Team"
+license: MIT
+
+environment:
+  class: SupplyChainEnv
+  module: supply_chain_env.env.environment
+  api_version: "1.0"
+  episode_length: 30
+
+  reset_endpoint: /reset
+  step_endpoint: /step
+  state_endpoint: /state/{session_id}
+
+  action_space:
+    type: union
+    variants:
+      - name: RestockAction
+        description: "Order units of a SKU from the supplier."
+        fields:
+          action_type: { type: literal, value: "restock" }
+          sku_id:      { type: string }
+          quantity:    { type: integer, minimum: 1 }
+
+      - name: TransferAction
+        description: "Move stock between two warehouses at $0.50/unit."
+        fields:
+          action_type:    { type: literal, value: "transfer" }
+          sku_id:         { type: string }
+          from_warehouse: { type: string }
+          to_warehouse:   { type: string }
+          quantity:       { type: integer, minimum: 1 }
+
+      - name: MarkdownAction
+        description: "Discount a SKU price; demand increases 1.5x discount fraction."
+        fields:
+          action_type:  { type: literal, value: "markdown" }
+          sku_id:       { type: string }
+          discount_pct: { type: float, minimum: 0.0, maximum: 0.9 }
+
+      - name: NoOpAction
+        description: "Take no action this day."
+        fields:
+          action_type: { type: literal, value: "noop" }
+
+  observation_space:
+    type: object
+    model: SupplyChainState
+    fields:
+      day:                  { type: integer,  description: "Current day (0-30)" }
+      budget_remaining:     { type: float,    description: "USD budget left" }
+      skus:                 { type: dict,     description: "SKU catalogue keyed by sku_id" }
+      stock:                { type: list,     description: "Per-warehouse stock levels" }
+      forecasts:            { type: list,     description: "7-day and 30-day demand forecasts" }
+      pending_orders:       { type: list,     description: "In-transit orders" }
+      stockout_events:      { type: integer,  description: "Cumulative stockouts" }
+      overstock_cost_total: { type: float,    description: "Cumulative holding cost USD" }
+      revenue_total:        { type: float,    description: "Cumulative revenue USD" }
+      task_description:     { type: string }
+      task_hint:            { type: string }
+
+  reward:
+    description: >
+      reward = revenue - holding_cost($0.05/unit/day) - stockout_penalty($15/event) - transfer_cost($0.50/unit)
+    range: [-500, 500]
+    partial_credit: true
+    shaped: true
+
+tasks:
+  - id: easy_restock
+    difficulty: easy
+    score_range: [0.0, 1.0]
+    description: >
+      Single warehouse, one SKU (Widget Alpha) critically low at 8 units.
+      Daily demand approx 6 units. Prevent stockouts for 30 days.
+    grader: supply_chain_env.graders.graders.grade_easy
+    initial_budget: 2000
+    deterministic: true
+
+  - id: medium_balance
+    difficulty: medium
+    score_range: [0.0, 1.0]
+    description: >
+      Two warehouses, two SKUs with imbalanced stock.
+      WH-NORTH overstocked on SKU-A; WH-SOUTH critically low.
+      Must transfer and restock with 5-day lead time awareness.
+    grader: supply_chain_env.graders.graders.grade_medium
+    initial_budget: 4000
+    deterministic: true
+
+  - id: hard_optimize
+    difficulty: hard
+    score_range: [0.0, 1.0]
+    description: >
+      Three warehouses, four SKUs, tight 6k budget, mid-month demand spike.
+      SKU-D has 7-day lead time. Must use restock, transfer, and markdown
+      strategically to maximise 30-day profit.
+    grader: supply_chain_env.graders.graders.grade_hard
+    initial_budget: 6000
+    deterministic: true
+
+baselines:
+  llm_agent:
+    model: meta-llama/Llama-3.3-70B-Instruct
+    seed: 42
+    script: inference.py
+
+  rule_based_agent:
+    script: scripts/baseline_agent.py
+    seed: 42
+    easy_restock: 0.61
+    medium_balance: 0.48
+    hard_optimize: 0.37
+
+deployment:
+  platform: huggingface_spaces
+  sdk: docker
+  dockerfile: Dockerfile
+  port: 7860
+  env_vars:
+    - API_BASE_URL
+    - MODEL_NAME
+    - HF_TOKEN
