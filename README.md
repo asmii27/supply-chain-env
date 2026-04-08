@@ -137,12 +137,6 @@ supply-chain-env/
 | Medium | 35% | 35% | 20% stock balance + 10% action diversity |
 | Hard | 30% | 30% | 20% holding cost + 10% markdown + 10% lead time |
 
-title: Supply Chain Env
-emoji: 🏭
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
 ---
 
 ## 🏆 Built For
