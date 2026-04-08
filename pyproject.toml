@@ -6,4 +6,12 @@ build-backend = "setuptools.backends.legacy:build"
 name = "supply-chain-env"
 version = "0.1.0"
 description = "A supply chain inventory management OpenEnv environment"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv-core>=0.2.0",
+    "fastapi",
+    "uvicorn"
+]
+
+[project.scripts]
+server = "api_server:app"
