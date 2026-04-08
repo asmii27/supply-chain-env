@@ -46,7 +46,7 @@ _sessions: Dict[str, Dict] = {}
 # ── Request / Response schemas ────────────────────────────────────────────────
 
 class ResetRequest(BaseModel):
-    task_id: str = "easy_restock"
+    task_id: Optional[str] = "easy_restock"
     seed: Optional[int] = 42
 
 
@@ -196,19 +196,21 @@ def list_tasks():
 
 
 @app.post("/reset")
-def reset_env(req: ResetRequest):
-    if req.task_id not in TASK_REGISTRY:
-        raise HTTPException(400, f"Unknown task_id '{req.task_id}'")
-
-    env   = SupplyChainEnv(task_id=req.task_id, seed=req.seed)
+def reset_env(req: Optional[ResetRequest] = None):
+    if req is None:
+        req = ResetRequest()
+    task_id = req.task_id or "easy_restock"
+    seed    = req.seed or 42
+    if task_id not in TASK_REGISTRY:
+        raise HTTPException(400, f"Unknown task_id '{task_id}'")
+    env   = SupplyChainEnv(task_id=task_id, seed=seed)
     state = env.reset()
-
     sid = str(uuid.uuid4())
     _sessions[sid] = {
         "env":            env,
-        "task_id":        req.task_id,
+        "task_id":        task_id,
         "initial_budget": state.budget_remaining,
-        "log":            EpisodeLog(task_id=req.task_id, initial_budget=state.budget_remaining),
+        "log":            EpisodeLog(task_id=task_id, initial_budget=state.budget_remaining),
     }
     return {"session_id": sid, "state": state.model_dump()}
 
