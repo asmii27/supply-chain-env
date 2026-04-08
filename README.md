@@ -1,3 +1,12 @@
+---
+title: Supply Chain Env
+emoji: 🏭
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # 🏭 SupplyChainEnv — OpenEnv
 
 > A real-world OpenEnv environment where AI agents learn to manage warehouse inventory, prevent stockouts, and maximise profit over a 30-day planning horizon.
