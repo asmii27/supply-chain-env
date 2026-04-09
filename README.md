@@ -19,7 +19,7 @@ pinned: false
 
 ## 🌍 Why Supply Chain?
 
-Inventory management is one of the most economically impactful real-world planning problems. Businesses lose billions annually to stockouts, overstock, and poor timing. This environment gives AI agents a faithful simulation of those exact tradeoffs — the same decisions a supply chain manager makes every day.
+Inventory management is one of the most economically impactful real-world planning problems. Businesses lose billions annually to stockouts, overstock, and poor timing. This environment gives AI agents a faithful simulation of those exact tradeoffs, the same decisions a supply chain manager makes every day.
 
 ---
 
